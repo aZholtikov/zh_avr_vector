@@ -6,9 +6,9 @@
         return err;                    \
     }
 
-static avr_err_t _resize(zh_avr_vector_t *vector, uint16_t capacity);
+static avr_err_t _resize(zh_avr_vector_t *vector, uint8_t capacity);
 
-avr_err_t zh_avr_vector_init(zh_avr_vector_t *vector, uint16_t unit)
+avr_err_t zh_avr_vector_init(zh_avr_vector_t *vector, uint8_t unit)
 {
     ZH_ERROR_CHECK((vector != NULL || unit != 0), AVR_ERR_INVALID_ARG);
     ZH_ERROR_CHECK(vector->status != true, AVR_ERR_INVALID_STATE);
@@ -23,11 +23,12 @@ avr_err_t zh_avr_vector_free(zh_avr_vector_t *vector)
 {
     ZH_ERROR_CHECK(vector != NULL, AVR_ERR_INVALID_ARG);
     ZH_ERROR_CHECK(vector->status != false, AVR_ERR_INVALID_STATE);
-    for (uint16_t i = 0; i < vector->size; ++i)
+    for (uint8_t i = 0; i < vector->size; ++i)
     {
-        free(vector->items[i]);
+        vPortFree(vector->items[i]);
     }
     vector->status = false;
+    vPortFree(vector->items);
     return AVR_OK;
 }
 
@@ -45,13 +46,13 @@ avr_err_t zh_avr_vector_push_back(zh_avr_vector_t *vector, void *item)
     {
         ZH_ERROR_CHECK((_resize(vector, vector->capacity + 1) != AVR_ERR_NO_MEM), AVR_ERR_NO_MEM);
     }
-    vector->items[vector->size] = calloc(1, vector->unit);
+    vector->items[vector->size] = pvPortCalloc(1, vector->unit);
     ZH_ERROR_CHECK(vector->items[vector->size] != NULL, AVR_ERR_NO_MEM);
     memcpy(vector->items[vector->size++], item, vector->unit);
     return AVR_OK;
 }
 
-avr_err_t zh_avr_vector_change_item(zh_avr_vector_t *vector, uint16_t index, void *item)
+avr_err_t zh_avr_vector_change_item(zh_avr_vector_t *vector, uint8_t index, void *item)
 {
     ZH_ERROR_CHECK((vector != NULL || item != NULL), AVR_ERR_INVALID_ARG);
     ZH_ERROR_CHECK(vector->status != false, AVR_ERR_INVALID_STATE);
@@ -63,7 +64,7 @@ avr_err_t zh_avr_vector_change_item(zh_avr_vector_t *vector, uint16_t index, voi
     return AVR_FAIL;
 }
 
-void *zh_avr_vector_get_item(zh_avr_vector_t *vector, uint16_t index)
+void *zh_avr_vector_get_item(zh_avr_vector_t *vector, uint8_t index)
 {
     ZH_ERROR_CHECK((vector != NULL || vector->status != false), NULL);
     if (index < vector->size)
@@ -77,31 +78,34 @@ void *zh_avr_vector_get_item(zh_avr_vector_t *vector, uint16_t index)
     }
 }
 
-avr_err_t zh_avr_vector_delete_item(zh_avr_vector_t *vector, uint16_t index)
+avr_err_t zh_avr_vector_delete_item(zh_avr_vector_t *vector, uint8_t index)
 {
     ZH_ERROR_CHECK(vector != NULL, AVR_ERR_INVALID_ARG);
     ZH_ERROR_CHECK(vector->status != false, AVR_ERR_INVALID_STATE);
     if (index < vector->size)
     {
-        free(vector->items[index]);
+        vPortFree(vector->items[index]);
         for (uint8_t i = index; i < (vector->size - 1); ++i)
         {
             vector->items[i] = vector->items[i + 1];
             vector->items[i + 1] = NULL;
         }
         --vector->size;
-        _resize(vector, vector->capacity - 1);
+        ZH_ERROR_CHECK((_resize(vector, vector->capacity - 1) != AVR_ERR_NO_MEM), AVR_ERR_NO_MEM);
         return AVR_OK;
     }
     return AVR_FAIL;
 }
 
-static avr_err_t _resize(zh_avr_vector_t *vector, uint16_t capacity)
+static avr_err_t _resize(zh_avr_vector_t *vector, uint8_t capacity)
 {
     if (capacity != 0)
     {
-        vector->items = realloc(vector->items, sizeof(void *) * capacity);
-        ZH_ERROR_CHECK(vector->items != NULL, AVR_ERR_NO_MEM);
+        void *items = pvPortCalloc(capacity, sizeof(void *) * capacity);
+        ZH_ERROR_CHECK(items != NULL, AVR_ERR_NO_MEM);
+        memcpy(items, vector->items, sizeof(void *) * capacity);
+        vPortFree(vector->items);
+        vector->items = items;
     }
     vector->capacity = capacity;
     return AVR_OK;
