@@ -1,11 +1,5 @@
 #include "zh_avr_vector.h"
 
-#define ZH_ERROR_CHECK(cond, err, ...) \
-    if (!(cond))                       \
-    {                                  \
-        return err;                    \
-    }
-
 static avr_err_t _resize(zh_avr_vector_t *vector, uint8_t capacity);
 
 avr_err_t zh_avr_vector_init(zh_avr_vector_t *vector, uint8_t unit)
