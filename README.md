@@ -65,20 +65,20 @@ void vector_example_task(void *pvParameters)
     strcpy(example, "Item 5");
     zh_avr_vector_push_back(&vector, &example);
     printf("Add 5 items. New vector size is: %d\n", zh_avr_vector_get_size(&vector));
-    for (uint16_t i = 0; i < zh_avr_vector_get_size(&vector); ++i)
+    for (uint8_t i = 0; i < zh_avr_vector_get_size(&vector); ++i)
     {
         printf("Item position %d is: %s\n", i, (char *)zh_avr_vector_get_item(&vector, i));
     }
     strcpy(example, "Item 6");
     zh_avr_vector_change_item(&vector, 3, &example);
     printf("Change item on 3 position.\n");
-    for (uint16_t i = 0; i < zh_avr_vector_get_size(&vector); ++i)
+    for (uint8_t i = 0; i < zh_avr_vector_get_size(&vector); ++i)
     {
         printf("Item position %d is: %s\n", i, (char *)zh_avr_vector_get_item(&vector, i));
     }
     zh_avr_vector_delete_item(&vector, 2);
     printf("Delete item on 2 position. New vector size is: %d\n", zh_avr_vector_get_size(&vector));
-    for (uint16_t i = 0; i < zh_avr_vector_get_size(&vector); ++i)
+    for (uint8_t i = 0; i < zh_avr_vector_get_size(&vector); ++i)
     {
         printf("Item position %d is: %s\n", i, (char *)zh_avr_vector_get_item(&vector, i));
     }
